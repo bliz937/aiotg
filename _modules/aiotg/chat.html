@@ -1,0 +1,171 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>aiotg.chat &mdash; aiotg 0.6 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.6',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="aiotg 0.6 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for aiotg.chat</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partialmethod</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;aiotg&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Chat"><a class="viewcode-back" href="../../aiotg.html#aiotg.chat.Chat">[docs]</a><span class="k">class</span> <span class="nc">Chat</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wrapper for telegram chats, passed to most callbacks</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Chat.send_text"><a class="viewcode-back" href="../../aiotg.html#aiotg.chat.Chat.send_text">[docs]</a>    <span class="k">def</span> <span class="nf">send_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Send a text message to the chat, for available options see</span>
+<span class="sd">        https://core.telegram.org/bots/api#sendmessage</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bot</span><span class="o">.</span><span class="n">send_message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Chat.reply"><a class="viewcode-back" href="../../aiotg.html#aiotg.chat.Chat.reply">[docs]</a>    <span class="k">def</span> <span class="nf">reply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">markup</span><span class="o">=</span><span class="p">{},</span> <span class="n">parse_mode</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_text</span><span class="p">(</span>
+            <span class="n">text</span><span class="p">,</span>
+            <span class="n">reply_to_message_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">[</span><span class="s2">&quot;message_id&quot;</span><span class="p">],</span>
+            <span class="n">disable_web_page_preview</span><span class="o">=</span><span class="s1">&#39;true&#39;</span><span class="p">,</span>
+            <span class="n">reply_markup</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">markup</span><span class="p">),</span>
+            <span class="n">parse_mode</span><span class="o">=</span><span class="n">parse_mode</span>
+        <span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_send_to_chat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bot</span><span class="o">.</span><span class="n">api_call</span><span class="p">(</span>
+            <span class="n">method</span><span class="p">,</span>
+            <span class="n">chat_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">),</span>
+            <span class="o">**</span><span class="n">options</span>
+        <span class="p">)</span>
+
+    <span class="n">send_audio</span> <span class="o">=</span> <span class="n">partialmethod</span><span class="p">(</span><span class="n">_send_to_chat</span><span class="p">,</span> <span class="s2">&quot;sendAudio&quot;</span><span class="p">)</span>
+    <span class="n">send_photo</span> <span class="o">=</span> <span class="n">partialmethod</span><span class="p">(</span><span class="n">_send_to_chat</span><span class="p">,</span> <span class="s2">&quot;sendPhoto&quot;</span><span class="p">)</span>
+    <span class="n">send_video</span> <span class="o">=</span> <span class="n">partialmethod</span><span class="p">(</span><span class="n">_send_to_chat</span><span class="p">,</span> <span class="s2">&quot;sendVideo&quot;</span><span class="p">)</span>
+    <span class="n">send_document</span> <span class="o">=</span> <span class="n">partialmethod</span><span class="p">(</span><span class="n">_send_to_chat</span><span class="p">,</span> <span class="s2">&quot;sendDocument&quot;</span><span class="p">)</span>
+    <span class="n">send_sticker</span> <span class="o">=</span> <span class="n">partialmethod</span><span class="p">(</span><span class="n">_send_to_chat</span><span class="p">,</span> <span class="s2">&quot;sendSticker&quot;</span><span class="p">)</span>
+    <span class="n">send_voice</span> <span class="o">=</span> <span class="n">partialmethod</span><span class="p">(</span><span class="n">_send_to_chat</span><span class="p">,</span> <span class="s2">&quot;sendVoice&quot;</span><span class="p">)</span>
+    <span class="n">send_locaton</span> <span class="o">=</span> <span class="n">partialmethod</span><span class="p">(</span><span class="n">_send_to_chat</span><span class="p">,</span> <span class="s2">&quot;sendLocation&quot;</span><span class="p">)</span>
+    <span class="n">send_chat_action</span> <span class="o">=</span> <span class="n">partialmethod</span><span class="p">(</span><span class="n">_send_to_chat</span><span class="p">,</span> <span class="s2">&quot;sendChatAction&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Chat.forward_message"><a class="viewcode-back" href="../../aiotg.html#aiotg.chat.Chat.forward_message">[docs]</a>    <span class="k">def</span> <span class="nf">forward_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">from_chat_id</span><span class="p">,</span> <span class="n">message_id</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bot</span><span class="o">.</span><span class="n">api_call</span><span class="p">(</span>
+            <span class="s2">&quot;forwardMessage&quot;</span><span class="p">,</span>
+            <span class="n">chat_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">from_chat_id</span><span class="o">=</span><span class="n">from_chat_id</span><span class="p">,</span>
+            <span class="n">message_id</span><span class="o">=</span><span class="n">message_id</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Chat.is_group"><a class="viewcode-back" href="../../aiotg.html#aiotg.chat.Chat.is_group">[docs]</a>    <span class="k">def</span> <span class="nf">is_group</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;group&quot;</span></div>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bot</span><span class="p">,</span> <span class="n">chat_id</span><span class="p">,</span> <span class="n">chat_type</span><span class="o">=</span><span class="s2">&quot;private&quot;</span><span class="p">,</span> <span class="n">src_message</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bot</span> <span class="o">=</span> <span class="n">bot</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">src_message</span>
+        <span class="n">sender</span> <span class="o">=</span> <span class="n">src_message</span><span class="p">[</span><span class="s1">&#39;from&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">src_message</span> <span class="k">else</span> <span class="p">{</span><span class="s2">&quot;first_name&quot;</span><span class="p">:</span> <span class="s2">&quot;N/A&quot;</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sender</span> <span class="o">=</span> <span class="n">Sender</span><span class="p">(</span><span class="n">sender</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">chat_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">chat_type</span>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Chat.from_message"><a class="viewcode-back" href="../../aiotg.html#aiotg.chat.Chat.from_message">[docs]</a>    <span class="k">def</span> <span class="nf">from_message</span><span class="p">(</span><span class="n">bot</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="n">chat</span> <span class="o">=</span> <span class="n">message</span><span class="p">[</span><span class="s2">&quot;chat&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">Chat</span><span class="p">(</span><span class="n">bot</span><span class="p">,</span> <span class="n">chat</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span> <span class="n">chat</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">],</span> <span class="n">message</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="TgChat"><a class="viewcode-back" href="../../aiotg.html#aiotg.chat.TgChat">[docs]</a><span class="k">class</span> <span class="nc">TgChat</span><span class="p">(</span><span class="n">Chat</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;TgChat is depricated, use Chat instead&quot;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Sender"><a class="viewcode-back" href="../../aiotg.html#aiotg.chat.Sender">[docs]</a><span class="k">class</span> <span class="nc">Sender</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A small wrapper for sender info, mostly used for logging&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">uname</span> <span class="o">=</span> <span class="s2">&quot; (</span><span class="si">%s</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;username&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;username&quot;</span> <span class="ow">in</span> <span class="bp">self</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;first_name&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">uname</span></div>
+
+
+<div class="viewcode-block" id="TgSender"><a class="viewcode-back" href="../../aiotg.html#aiotg.chat.TgSender">[docs]</a><span class="k">class</span> <span class="nc">TgSender</span><span class="p">(</span><span class="n">Sender</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;TgSender is depricated, use Sender instead&quot;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Stepan Zastupov.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

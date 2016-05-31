@@ -1,0 +1,431 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>aiotg reference &mdash; aiotg 0.6 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.6',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="aiotg 0.6 documentation" href="index.html" />
+    <link rel="prev" title="aiotg" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="aiotg-reference">
+<h1>aiotg reference<a class="headerlink" href="#aiotg-reference" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-aiotg.bot">
+<span id="aiotg-bot-module"></span><h2>aiotg.bot module<a class="headerlink" href="#module-aiotg.bot" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="aiotg.bot.Bot">
+<em class="property">class </em><code class="descclassname">aiotg.bot.</code><code class="descname">Bot</code><span class="sig-paren">(</span><em>api_token</em>, <em>api_timeout=60</em>, <em>botan_token=None</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/bot.html#Bot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.bot.Bot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Telegram bot framework designed for asyncio</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>api_token</strong> &#8211; Telegram bot token, ask &#64;BotFather for this</li>
+<li><strong>api_timeout</strong> &#8211; Timeout for long polling</li>
+<li><strong>botan_token</strong> &#8211; Token for <a class="reference external" href="http://botan.io">http://botan.io</a></li>
+<li><strong>name</strong> &#8211; Bot name</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="aiotg.bot.Bot.api_call">
+<code class="descname">api_call</code><span class="sig-paren">(</span><em>method</em>, <em>**params</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/bot.html#Bot.api_call"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.bot.Bot.api_call" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call Telegram API
+See <a class="reference external" href="https://core.telegram.org/bots/api">https://core.telegram.org/bots/api</a> for the reference</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="aiotg.bot.Bot.callback">
+<code class="descname">callback</code><span class="sig-paren">(</span><em>callback</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/bot.html#Bot.callback"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.bot.Bot.callback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set callback for callback queries</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@bot</span><span class="o">.</span><span class="n">callback</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">echo</span><span class="p">(</span><span class="n">chat</span><span class="p">,</span> <span class="n">cq</span><span class="p">):</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="k">return</span> <span class="n">cq</span><span class="o">.</span><span class="n">answer</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="aiotg.bot.Bot.command">
+<code class="descname">command</code><span class="sig-paren">(</span><em>regexp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/bot.html#Bot.command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.bot.Bot.command" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register a new command</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@bot</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">r&quot;/echo (.+)&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">echo</span><span class="p">(</span><span class="n">chat</span><span class="p">,</span> <span class="n">match</span><span class="p">):</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="k">return</span> <span class="n">chat</span><span class="o">.</span><span class="n">reply</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="aiotg.bot.Bot.default">
+<code class="descname">default</code><span class="sig-paren">(</span><em>callback</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/bot.html#Bot.default"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.bot.Bot.default" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set callback for default command that is
+called on unrecognized commands for 1to1 chats</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@bot</span><span class="o">.</span><span class="n">default</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">echo</span><span class="p">(</span><span class="n">chat</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="k">return</span> <span class="n">chat</span><span class="o">.</span><span class="n">reply</span><span class="p">(</span><span class="n">message</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="aiotg.bot.Bot.download_file">
+<code class="descname">download_file</code><span class="sig-paren">(</span><em>file_path</em>, <em>range=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/bot.html#Bot.download_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.bot.Bot.download_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dowload a file from Telegram servers</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="aiotg.bot.Bot.get_file">
+<code class="descname">get_file</code><span class="sig-paren">(</span><em>file_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/bot.html#Bot.get_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.bot.Bot.get_file" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="https://core.telegram.org/bots/api#getfile">https://core.telegram.org/bots/api#getfile</a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="aiotg.bot.Bot.handle">
+<code class="descname">handle</code><span class="sig-paren">(</span><em>msg_type</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/bot.html#Bot.handle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.bot.Bot.handle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set handler for specific message type</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@bot</span><span class="o">.</span><span class="n">handle</span><span class="p">(</span><span class="s2">&quot;audio&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">handle</span><span class="p">(</span><span class="n">chat</span><span class="p">,</span> <span class="n">audio</span><span class="p">):</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="k">pass</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="aiotg.bot.Bot.inline">
+<code class="descname">inline</code><span class="sig-paren">(</span><em>callback</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/bot.html#Bot.inline"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.bot.Bot.inline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set callback for inline queries</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@bot</span><span class="o">.</span><span class="n">inline</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">echo</span><span class="p">(</span><span class="n">iq</span><span class="p">):</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="k">return</span> <span class="n">iq</span><span class="o">.</span><span class="n">answer</span><span class="p">([</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="p">])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="aiotg.bot.Bot.loop">
+<code class="descname">loop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/bot.html#Bot.loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.bot.Bot.loop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return bot&#8217;s main loop as coroutine</p>
+<p>Use it with asyncio:
+&gt;&gt;&gt; loop = asyncio.get_event_loop()
+&gt;&gt;&gt; loop.run_until_complete(bot.loop())</p>
+<p>or:
+&gt;&gt;&gt; loop.create_task(bot.loop())</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="aiotg.bot.Bot.run">
+<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/bot.html#Bot.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.bot.Bot.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience method for running bots</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Example:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">bot</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="aiotg.bot.Bot.send_message">
+<code class="descname">send_message</code><span class="sig-paren">(</span><em>chat_id</em>, <em>text</em>, <em>**options</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/bot.html#Bot.send_message"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.bot.Bot.send_message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send a text message to chat</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="aiotg.bot.Bot.stop">
+<code class="descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/bot.html#Bot.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.bot.Bot.stop" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="aiotg.bot.Bot.track">
+<code class="descname">track</code><span class="sig-paren">(</span><em>message</em>, <em>name='Message'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/bot.html#Bot.track"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.bot.Bot.track" title="Permalink to this definition">¶</a></dt>
+<dd><p>Track message using <a class="reference external" href="http://botan.io">http://botan.io</a>
+Set botak_token to make it work</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="aiotg.bot.CallbackQuery">
+<em class="property">class </em><code class="descclassname">aiotg.bot.</code><code class="descname">CallbackQuery</code><span class="sig-paren">(</span><em>bot</em>, <em>src</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/bot.html#CallbackQuery"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.bot.CallbackQuery" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="aiotg.bot.CallbackQuery.answer">
+<code class="descname">answer</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/bot.html#CallbackQuery.answer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.bot.CallbackQuery.answer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="aiotg.bot.InlineQuery">
+<em class="property">class </em><code class="descclassname">aiotg.bot.</code><code class="descname">InlineQuery</code><span class="sig-paren">(</span><em>bot</em>, <em>src</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/bot.html#InlineQuery"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.bot.InlineQuery" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Incoming inline query
+See <a class="reference external" href="https://core.telegram.org/bots/api#inline-mode">https://core.telegram.org/bots/api#inline-mode</a> for details</p>
+<dl class="method">
+<dt id="aiotg.bot.InlineQuery.answer">
+<code class="descname">answer</code><span class="sig-paren">(</span><em>results</em>, <em>**options</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/bot.html#InlineQuery.answer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.bot.InlineQuery.answer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="aiotg.bot.TgBot">
+<em class="property">class </em><code class="descclassname">aiotg.bot.</code><code class="descname">TgBot</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/bot.html#TgBot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.bot.TgBot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aiotg.bot.Bot" title="aiotg.bot.Bot"><code class="xref py py-class docutils literal"><span class="pre">aiotg.bot.Bot</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="aiotg.bot.TgInlineQuery">
+<em class="property">class </em><code class="descclassname">aiotg.bot.</code><code class="descname">TgInlineQuery</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/bot.html#TgInlineQuery"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.bot.TgInlineQuery" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aiotg.bot.InlineQuery" title="aiotg.bot.InlineQuery"><code class="xref py py-class docutils literal"><span class="pre">aiotg.bot.InlineQuery</span></code></a></p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-aiotg.chat">
+<span id="aiotg-chat-module"></span><h2>aiotg.chat module<a class="headerlink" href="#module-aiotg.chat" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="aiotg.chat.Chat">
+<em class="property">class </em><code class="descclassname">aiotg.chat.</code><code class="descname">Chat</code><span class="sig-paren">(</span><em>bot</em>, <em>chat_id</em>, <em>chat_type='private'</em>, <em>src_message=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/chat.html#Chat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.chat.Chat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Wrapper for telegram chats, passed to most callbacks</p>
+<dl class="method">
+<dt id="aiotg.chat.Chat.forward_message">
+<code class="descname">forward_message</code><span class="sig-paren">(</span><em>from_chat_id</em>, <em>message_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/chat.html#Chat.forward_message"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.chat.Chat.forward_message" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="aiotg.chat.Chat.from_message">
+<em class="property">static </em><code class="descname">from_message</code><span class="sig-paren">(</span><em>bot</em>, <em>message</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/chat.html#Chat.from_message"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.chat.Chat.from_message" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="aiotg.chat.Chat.is_group">
+<code class="descname">is_group</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/chat.html#Chat.is_group"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.chat.Chat.is_group" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="aiotg.chat.Chat.reply">
+<code class="descname">reply</code><span class="sig-paren">(</span><em>text</em>, <em>markup={}</em>, <em>parse_mode=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/chat.html#Chat.reply"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.chat.Chat.reply" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="aiotg.chat.Chat.send_audio">
+<code class="descname">send_audio</code><span class="sig-paren">(</span><em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#aiotg.chat.Chat.send_audio" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="aiotg.chat.Chat.send_chat_action">
+<code class="descname">send_chat_action</code><span class="sig-paren">(</span><em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#aiotg.chat.Chat.send_chat_action" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="aiotg.chat.Chat.send_document">
+<code class="descname">send_document</code><span class="sig-paren">(</span><em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#aiotg.chat.Chat.send_document" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="aiotg.chat.Chat.send_locaton">
+<code class="descname">send_locaton</code><span class="sig-paren">(</span><em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#aiotg.chat.Chat.send_locaton" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="aiotg.chat.Chat.send_photo">
+<code class="descname">send_photo</code><span class="sig-paren">(</span><em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#aiotg.chat.Chat.send_photo" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="aiotg.chat.Chat.send_sticker">
+<code class="descname">send_sticker</code><span class="sig-paren">(</span><em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#aiotg.chat.Chat.send_sticker" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="aiotg.chat.Chat.send_text">
+<code class="descname">send_text</code><span class="sig-paren">(</span><em>text</em>, <em>**options</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/chat.html#Chat.send_text"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.chat.Chat.send_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send a text message to the chat, for available options see
+<a class="reference external" href="https://core.telegram.org/bots/api#sendmessage">https://core.telegram.org/bots/api#sendmessage</a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="aiotg.chat.Chat.send_video">
+<code class="descname">send_video</code><span class="sig-paren">(</span><em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#aiotg.chat.Chat.send_video" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="aiotg.chat.Chat.send_voice">
+<code class="descname">send_voice</code><span class="sig-paren">(</span><em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#aiotg.chat.Chat.send_voice" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="aiotg.chat.Sender">
+<em class="property">class </em><code class="descclassname">aiotg.chat.</code><code class="descname">Sender</code><a class="reference internal" href="_modules/aiotg/chat.html#Sender"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.chat.Sender" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">dict</span></code></p>
+<p>A small wrapper for sender info, mostly used for logging</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="aiotg.chat.TgChat">
+<em class="property">class </em><code class="descclassname">aiotg.chat.</code><code class="descname">TgChat</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/chat.html#TgChat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.chat.TgChat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aiotg.chat.Chat" title="aiotg.chat.Chat"><code class="xref py py-class docutils literal"><span class="pre">aiotg.chat.Chat</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="aiotg.chat.TgSender">
+<em class="property">class </em><code class="descclassname">aiotg.chat.</code><code class="descname">TgSender</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/aiotg/chat.html#TgSender"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aiotg.chat.TgSender" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aiotg.chat.Sender" title="aiotg.chat.Sender"><code class="xref py py-class docutils literal"><span class="pre">aiotg.chat.Sender</span></code></a></p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-aiotg">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aiotg" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">aiotg reference</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-aiotg.bot">aiotg.bot module</a></li>
+<li><a class="reference internal" href="#module-aiotg.chat">aiotg.chat module</a></li>
+<li><a class="reference internal" href="#module-aiotg">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">aiotg</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/aiotg.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Stepan Zastupov.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+      |
+      <a href="_sources/aiotg.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

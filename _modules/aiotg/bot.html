@@ -1,0 +1,409 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>aiotg.bot &mdash; aiotg 0.6 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.6',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="aiotg 0.6 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for aiotg.bot</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">aiohttp</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partialmethod</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="nn">chat</span> <span class="kn">import</span> <span class="n">Chat</span><span class="p">,</span> <span class="n">Sender</span>
+
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Stepan Zastupov&quot;</span>
+<span class="n">__copyright__</span> <span class="o">=</span> <span class="s2">&quot;Copyright 2015, Stepan Zastupov&quot;</span>
+<span class="n">__license__</span> <span class="o">=</span> <span class="s2">&quot;MIT&quot;</span>
+
+<span class="n">API_URL</span> <span class="o">=</span> <span class="s2">&quot;https://api.telegram.org&quot;</span>
+<span class="n">API_TIMEOUT</span> <span class="o">=</span> <span class="mi">60</span>
+<span class="n">RETRY_TIMEOUT</span> <span class="o">=</span> <span class="mi">30</span>
+<span class="n">RETRY_CODES</span> <span class="o">=</span> <span class="p">[</span><span class="mi">429</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="mi">502</span><span class="p">,</span> <span class="mi">503</span><span class="p">,</span> <span class="mi">504</span><span class="p">]</span>
+<span class="n">BOTAN_URL</span> <span class="o">=</span> <span class="s2">&quot;https://api.botan.io/track&quot;</span>
+
+<span class="n">MESSAGE_TYPES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;location&quot;</span><span class="p">,</span> <span class="s2">&quot;photo&quot;</span><span class="p">,</span> <span class="s2">&quot;document&quot;</span><span class="p">,</span> <span class="s2">&quot;audio&quot;</span><span class="p">,</span> <span class="s2">&quot;voice&quot;</span><span class="p">,</span> <span class="s2">&quot;sticker&quot;</span><span class="p">,</span> <span class="s2">&quot;contact&quot;</span>
+<span class="p">]</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;aiotg&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Bot"><a class="viewcode-back" href="../../aiotg.html#aiotg.bot.Bot">[docs]</a><span class="k">class</span> <span class="nc">Bot</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Telegram bot framework designed for asyncio</span>
+
+<span class="sd">    :param api_token: Telegram bot token, ask @BotFather for this</span>
+<span class="sd">    :param api_timeout: Timeout for long polling</span>
+<span class="sd">    :param botan_token: Token for http://botan.io</span>
+<span class="sd">    :param name: Bot name</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_running</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">_offset</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api_token</span><span class="p">,</span> <span class="n">api_timeout</span><span class="o">=</span><span class="n">API_TIMEOUT</span><span class="p">,</span>
+                 <span class="n">botan_token</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api_token</span> <span class="o">=</span> <span class="n">api_token</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api_timeout</span> <span class="o">=</span> <span class="n">api_timeout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">botan_token</span> <span class="o">=</span> <span class="n">botan_token</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+
+        <span class="k">def</span> <span class="nf">no_handle</span><span class="p">(</span><span class="n">mt</span><span class="p">):</span>
+            <span class="k">return</span> <span class="k">lambda</span> <span class="n">chat</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;no handle for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">mt</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_handlers</span> <span class="o">=</span> <span class="p">{</span><span class="n">mt</span><span class="p">:</span> <span class="n">no_handle</span><span class="p">(</span><span class="n">mt</span><span class="p">)</span> <span class="k">for</span> <span class="n">mt</span> <span class="ow">in</span> <span class="n">MESSAGE_TYPES</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_commands</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_default</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">c</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inline</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">iq</span><span class="p">:</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_callback</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">c</span><span class="p">,</span> <span class="n">cq</span><span class="p">:</span> <span class="bp">None</span>
+
+    <span class="nd">@asyncio.coroutine</span>
+<div class="viewcode-block" id="Bot.loop"><a class="viewcode-back" href="../../aiotg.html#aiotg.bot.Bot.loop">[docs]</a>    <span class="k">def</span> <span class="nf">loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return bot&#39;s main loop as coroutine</span>
+
+<span class="sd">        Use it with asyncio:</span>
+<span class="sd">        &gt;&gt;&gt; loop = asyncio.get_event_loop()</span>
+<span class="sd">        &gt;&gt;&gt; loop.run_until_complete(bot.loop())</span>
+
+<span class="sd">        or:</span>
+<span class="sd">        &gt;&gt;&gt; loop.create_task(bot.loop())</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_running</span><span class="p">:</span>
+            <span class="n">updates</span> <span class="o">=</span> <span class="k">yield from</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_call</span><span class="p">(</span>
+                <span class="s1">&#39;getUpdates&#39;</span><span class="p">,</span>
+                <span class="n">offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_offset</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">api_timeout</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_process_updates</span><span class="p">(</span><span class="n">updates</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Bot.run"><a class="viewcode-back" href="../../aiotg.html#aiotg.bot.Bot.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convenience method for running bots</span>
+
+<span class="sd">        :Example:</span>
+<span class="sd">        &gt;&gt;&gt; if __name__ == &#39;__main__&#39;:</span>
+<span class="sd">        &gt;&gt;&gt;     bot.run()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loop</span><span class="p">())</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Bot.command"><a class="viewcode-back" href="../../aiotg.html#aiotg.bot.Bot.command">[docs]</a>    <span class="k">def</span> <span class="nf">command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">regexp</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Register a new command</span>
+
+<span class="sd">        :Example:</span>
+<span class="sd">        &gt;&gt;&gt; @bot.command(r&quot;/echo (.+)&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; def echo(chat, match):</span>
+<span class="sd">        &gt;&gt;&gt;     return chat.reply(match.group(1))</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">decorator</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_commands</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">regexp</span><span class="p">,</span> <span class="n">fn</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">fn</span>
+        <span class="k">return</span> <span class="n">decorator</span></div>
+
+<div class="viewcode-block" id="Bot.default"><a class="viewcode-back" href="../../aiotg.html#aiotg.bot.Bot.default">[docs]</a>    <span class="k">def</span> <span class="nf">default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set callback for default command that is</span>
+<span class="sd">        called on unrecognized commands for 1to1 chats</span>
+
+<span class="sd">        :Example:</span>
+<span class="sd">        &gt;&gt;&gt; @bot.default</span>
+<span class="sd">        &gt;&gt;&gt; def echo(chat, message):</span>
+<span class="sd">        &gt;&gt;&gt;     return chat.reply(message[&quot;text&quot;])</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_default</span> <span class="o">=</span> <span class="n">callback</span>
+        <span class="k">return</span> <span class="n">callback</span></div>
+
+<div class="viewcode-block" id="Bot.inline"><a class="viewcode-back" href="../../aiotg.html#aiotg.bot.Bot.inline">[docs]</a>    <span class="k">def</span> <span class="nf">inline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set callback for inline queries</span>
+
+<span class="sd">        :Example:</span>
+<span class="sd">        &gt;&gt;&gt; @bot.inline</span>
+<span class="sd">        &gt;&gt;&gt; def echo(iq):</span>
+<span class="sd">        &gt;&gt;&gt;     return iq.answer([</span>
+<span class="sd">        &gt;&gt;&gt;         {&quot;type&quot;: &quot;text&quot;, &quot;title&quot;: &quot;test&quot;, &quot;id&quot;, &quot;0&quot;}</span>
+<span class="sd">        &gt;&gt;&gt;     ])</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inline</span> <span class="o">=</span> <span class="n">callback</span>
+        <span class="k">return</span> <span class="n">callback</span></div>
+
+<div class="viewcode-block" id="Bot.callback"><a class="viewcode-back" href="../../aiotg.html#aiotg.bot.Bot.callback">[docs]</a>    <span class="k">def</span> <span class="nf">callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set callback for callback queries</span>
+
+<span class="sd">        :Example:</span>
+<span class="sd">        &gt;&gt;&gt; @bot.callback</span>
+<span class="sd">        &gt;&gt;&gt; def echo(chat, cq):</span>
+<span class="sd">        &gt;&gt;&gt;     return cq.answer()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_callback</span> <span class="o">=</span> <span class="n">callback</span>
+        <span class="k">return</span> <span class="n">callback</span></div>
+
+<div class="viewcode-block" id="Bot.handle"><a class="viewcode-back" href="../../aiotg.html#aiotg.bot.Bot.handle">[docs]</a>    <span class="k">def</span> <span class="nf">handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg_type</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set handler for specific message type</span>
+
+<span class="sd">        :Example:</span>
+<span class="sd">        &gt;&gt;&gt; @bot.handle(&quot;audio&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; def handle(chat, audio):</span>
+<span class="sd">        &gt;&gt;&gt;     pass</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">wrap</span><span class="p">(</span><span class="n">callback</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_handlers</span><span class="p">[</span><span class="n">msg_type</span><span class="p">]</span> <span class="o">=</span> <span class="n">callback</span>
+            <span class="k">return</span> <span class="n">callback</span>
+        <span class="k">return</span> <span class="n">wrap</span></div>
+
+<div class="viewcode-block" id="Bot.api_call"><a class="viewcode-back" href="../../aiotg.html#aiotg.bot.Bot.api_call">[docs]</a>    <span class="n">async</span> <span class="k">def</span> <span class="nf">api_call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Call Telegram API</span>
+<span class="sd">        See https://core.telegram.org/bots/api for the reference</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;{0}/bot{1}/{2}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">API_URL</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_token</span><span class="p">,</span> <span class="n">method</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">await</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">await</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+        <span class="k">elif</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="ow">in</span> <span class="n">RETRY_CODES</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Server returned </span><span class="si">%d</span><span class="s2">, retrying in </span><span class="si">%d</span><span class="s2"> sec.&quot;</span><span class="p">,</span>
+                        <span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">RETRY_TIMEOUT</span><span class="p">)</span>
+            <span class="n">await</span> <span class="n">response</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+            <span class="n">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">RETRY_TIMEOUT</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_call</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s1">&#39;content-type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;application/json&#39;</span><span class="p">:</span>
+                <span class="n">err_msg</span> <span class="o">=</span> <span class="p">(</span><span class="n">await</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">err_msg</span> <span class="o">=</span> <span class="n">await</span> <span class="n">response</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">err_msg</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">err_msg</span><span class="p">)</span></div>
+
+    <span class="n">_send_message</span> <span class="o">=</span> <span class="n">partialmethod</span><span class="p">(</span><span class="n">api_call</span><span class="p">,</span> <span class="s2">&quot;sendMessage&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Bot.send_message"><a class="viewcode-back" href="../../aiotg.html#aiotg.bot.Bot.send_message">[docs]</a>    <span class="k">def</span> <span class="nf">send_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chat_id</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Send a text message to chat&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send_message</span><span class="p">(</span><span class="n">chat_id</span><span class="o">=</span><span class="n">chat_id</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span></div>
+
+    <span class="nd">@asyncio.coroutine</span>
+<div class="viewcode-block" id="Bot.get_file"><a class="viewcode-back" href="../../aiotg.html#aiotg.bot.Bot.get_file">[docs]</a>    <span class="k">def</span> <span class="nf">get_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        https://core.telegram.org/bots/api#getfile</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">json</span> <span class="o">=</span> <span class="k">yield from</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_call</span><span class="p">(</span><span class="s2">&quot;getFile&quot;</span><span class="p">,</span> <span class="n">file_id</span><span class="o">=</span><span class="n">file_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">json</span><span class="p">[</span><span class="s2">&quot;result&quot;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Bot.download_file"><a class="viewcode-back" href="../../aiotg.html#aiotg.bot.Bot.download_file">[docs]</a>    <span class="k">def</span> <span class="nf">download_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Dowload a file from Telegram servers</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;range&quot;</span><span class="p">:</span> <span class="nb">range</span><span class="p">}</span> <span class="k">if</span> <span class="nb">range</span> <span class="k">else</span> <span class="bp">None</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;{0}/file/bot{1}/{2}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">API_URL</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_token</span><span class="p">,</span> <span class="n">file_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Bot.track"><a class="viewcode-back" href="../../aiotg.html#aiotg.bot.Bot.track">[docs]</a>    <span class="k">def</span> <span class="nf">track</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Message&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Track message using http://botan.io</span>
+<span class="sd">        Set botak_token to make it work</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">botan_token</span><span class="p">:</span>
+            <span class="n">asyncio</span><span class="o">.</span><span class="n">async</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_track</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Bot.stop"><a class="viewcode-back" href="../../aiotg.html#aiotg.bot.Bot.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="bp">False</span></div>
+
+    <span class="nd">@asyncio.coroutine</span>
+    <span class="k">def</span> <span class="nf">_track</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="k">yield from</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+            <span class="n">BOTAN_URL</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;token&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">botan_token</span><span class="p">,</span>
+                <span class="s2">&quot;uid&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">[</span><span class="s2">&quot;from&quot;</span><span class="p">][</span><span class="s2">&quot;id&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span>
+            <span class="p">},</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">message</span><span class="p">),</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;content-type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">}</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;error submiting stats </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="p">)</span>
+        <span class="k">yield from</span> <span class="n">response</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_process_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="n">chat</span> <span class="o">=</span> <span class="n">Chat</span><span class="o">.</span><span class="n">from_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">mt</span> <span class="ow">in</span> <span class="n">MESSAGE_TYPES</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">mt</span> <span class="ow">in</span> <span class="n">message</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">track</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">mt</span><span class="p">)</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handlers</span><span class="p">[</span><span class="n">mt</span><span class="p">](</span><span class="n">chat</span><span class="p">,</span> <span class="n">message</span><span class="p">[</span><span class="n">mt</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="s2">&quot;text&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">message</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">for</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">handler</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_commands</span><span class="p">:</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">patterns</span><span class="p">,</span> <span class="n">message</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">track</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">handler</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">handler</span><span class="p">(</span><span class="n">chat</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span>
+
+        <span class="c1"># No match, run default if it&#39;s a 1to1 chat</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">chat</span><span class="o">.</span><span class="n">is_group</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">track</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="s2">&quot;default&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default</span><span class="p">(</span><span class="n">chat</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_process_inline_query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">):</span>
+        <span class="n">iq</span> <span class="o">=</span> <span class="n">InlineQuery</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inline</span><span class="p">(</span><span class="n">iq</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_process_callback_query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">):</span>
+        <span class="n">chat</span> <span class="o">=</span> <span class="n">Chat</span><span class="o">.</span><span class="n">from_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">[</span><span class="s2">&quot;message&quot;</span><span class="p">])</span>
+        <span class="n">cq</span> <span class="o">=</span> <span class="n">CallbackQuery</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_callback</span><span class="p">(</span><span class="n">chat</span><span class="p">,</span> <span class="n">cq</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_process_updates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">updates</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;ok&quot;</span><span class="p">]:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;getUpdates error: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">updates</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;description&quot;</span><span class="p">))</span>
+            <span class="k">return</span>
+
+        <span class="k">for</span> <span class="n">update</span> <span class="ow">in</span> <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;result&quot;</span><span class="p">]:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;update </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">update</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_offset</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_offset</span><span class="p">,</span> <span class="n">update</span><span class="p">[</span><span class="s2">&quot;update_id&quot;</span><span class="p">])</span>
+            <span class="n">coro</span> <span class="o">=</span> <span class="bp">None</span>
+
+            <span class="k">if</span> <span class="s2">&quot;message&quot;</span> <span class="ow">in</span> <span class="n">update</span><span class="p">:</span>
+                <span class="n">coro</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_message</span><span class="p">(</span><span class="n">update</span><span class="p">[</span><span class="s2">&quot;message&quot;</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="s2">&quot;inline_query&quot;</span> <span class="ow">in</span> <span class="n">update</span><span class="p">:</span>
+                <span class="n">coro</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_inline_query</span><span class="p">(</span><span class="n">update</span><span class="p">[</span><span class="s2">&quot;inline_query&quot;</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="s2">&quot;callback_query&quot;</span> <span class="ow">in</span> <span class="n">update</span><span class="p">:</span>
+                <span class="n">coro</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_callback_query</span><span class="p">(</span><span class="n">update</span><span class="p">[</span><span class="s2">&quot;callback_query&quot;</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">coro</span><span class="p">:</span>
+                <span class="n">asyncio</span><span class="o">.</span><span class="n">async</span><span class="p">(</span><span class="n">coro</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TgBot"><a class="viewcode-back" href="../../aiotg.html#aiotg.bot.TgBot">[docs]</a><span class="k">class</span> <span class="nc">TgBot</span><span class="p">(</span><span class="n">Bot</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;TgBot is depricated, use Bot instead&quot;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="InlineQuery"><a class="viewcode-back" href="../../aiotg.html#aiotg.bot.InlineQuery">[docs]</a><span class="k">class</span> <span class="nc">InlineQuery</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Incoming inline query</span>
+<span class="sd">    See https://core.telegram.org/bots/api#inline-mode for details</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bot</span><span class="p">,</span> <span class="n">src</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bot</span> <span class="o">=</span> <span class="n">bot</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sender</span> <span class="o">=</span> <span class="n">Sender</span><span class="p">(</span><span class="n">src</span><span class="p">[</span><span class="s1">&#39;from&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">query_id</span> <span class="o">=</span> <span class="n">src</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">query</span> <span class="o">=</span> <span class="n">src</span><span class="p">[</span><span class="s1">&#39;query&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="InlineQuery.answer"><a class="viewcode-back" href="../../aiotg.html#aiotg.bot.InlineQuery.answer">[docs]</a>    <span class="k">def</span> <span class="nf">answer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bot</span><span class="o">.</span><span class="n">api_call</span><span class="p">(</span>
+            <span class="s2">&quot;answerInlineQuery&quot;</span><span class="p">,</span>
+            <span class="n">inline_query_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">query_id</span><span class="p">,</span>
+            <span class="n">results</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">results</span><span class="p">),</span>
+            <span class="o">**</span><span class="n">options</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="TgInlineQuery"><a class="viewcode-back" href="../../aiotg.html#aiotg.bot.TgInlineQuery">[docs]</a><span class="k">class</span> <span class="nc">TgInlineQuery</span><span class="p">(</span><span class="n">InlineQuery</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;TgInlineQuery is depricated, use InlineQuery instead&quot;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CallbackQuery"><a class="viewcode-back" href="../../aiotg.html#aiotg.bot.CallbackQuery">[docs]</a><span class="k">class</span> <span class="nc">CallbackQuery</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bot</span><span class="p">,</span> <span class="n">src</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bot</span> <span class="o">=</span> <span class="n">bot</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">query_id</span> <span class="o">=</span> <span class="n">src</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">src</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="CallbackQuery.answer"><a class="viewcode-back" href="../../aiotg.html#aiotg.bot.CallbackQuery.answer">[docs]</a>    <span class="k">def</span> <span class="nf">answer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bot</span><span class="o">.</span><span class="n">api_call</span><span class="p">(</span>
+            <span class="s2">&quot;answerCallbackQuery&quot;</span><span class="p">,</span>
+            <span class="n">callback_query_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">query_id</span>
+        <span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Stepan Zastupov.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
